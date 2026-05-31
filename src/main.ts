@@ -12,6 +12,7 @@ import {type PlaudVaultAdapter, upsertPlaudNote} from './plaud-vault';
 import {PlaudApiError, type PlaudApiClient, type PlaudFileDetail} from './plaud-api';
 import {DEFAULT_RETRY_POLICY, sanitizeTelemetryMessage, type RetryTelemetryEvent, withRetry} from './plaud-retry';
 import {hydratePlaudDetailContent} from './plaud-content-hydrator';
+import {transcribeAudio} from './plaud-transcriber';
 
 function toErrorMessage(error: unknown): string {
 	if (error instanceof Error && error.message.trim().length > 0) {
@@ -44,7 +45,11 @@ function toActionableMessage(error: unknown): string {
 }
 
 function formatSyncSummary(summary: PlaudSyncSummary): string {
-	return `Plaud sync complete. Created ${summary.created}, updated ${summary.updated}, skipped ${summary.skipped}, failed ${summary.failed}.`;
+	const parts = [`Plaud sync complete. Created ${summary.created}, updated ${summary.updated}, skipped ${summary.skipped}, failed ${summary.failed}.`];
+	if (summary.transcribed > 0) {
+		parts.push(`Transcribed ${summary.transcribed} recording(s).`);
+	}
+	return parts.join(' ');
 }
 
 export default class PlaudSyncPlugin extends Plugin {
@@ -185,6 +190,16 @@ export default class PlaudSyncPlugin extends Plugin {
 			renderMarkdown: renderPlaudMarkdown,
 			downloadAudio: async (fileId) => resilientApi.downloadAudio(fileId),
 			createBinary: async (path, data) => this.createVaultAdapter().createBinary(path, data),
+			enableTranscription: this.settings.enableTranscription,
+			transcribeAudio: async (audioData, fileName) => transcribeAudio({
+				audioData,
+				fileName,
+				settings: {
+					apiUrl: this.settings.transcriptionApiUrl,
+					apiKey: this.settings.transcriptionApiKey,
+					model: this.settings.transcriptionModel
+				}
+			}),
 			upsertNote: upsertPlaudNote
 		});
 	}

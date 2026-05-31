@@ -5,6 +5,10 @@ export interface PlaudPluginSettings {
 	updateExisting: boolean;
 	filenamePattern: string;
 	lastSyncAtMs: number;
+	enableTranscription: boolean;
+	transcriptionApiUrl: string;
+	transcriptionApiKey: string;
+	transcriptionModel: string;
 }
 
 export const DEFAULT_SETTINGS: PlaudPluginSettings = {
@@ -13,7 +17,11 @@ export const DEFAULT_SETTINGS: PlaudPluginSettings = {
 	syncOnStartup: true,
 	updateExisting: true,
 	filenamePattern: 'plaud-{date}-{title}',
-	lastSyncAtMs: 0
+	lastSyncAtMs: 0,
+	enableTranscription: false,
+	transcriptionApiUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+	transcriptionApiKey: '',
+	transcriptionModel: 'paraformer-v2'
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -50,7 +58,11 @@ export function normalizeSettings(raw: unknown): PlaudPluginSettings {
 		syncOnStartup: readBoolean(persisted.syncOnStartup, DEFAULT_SETTINGS.syncOnStartup),
 		updateExisting: readBoolean(persisted.updateExisting, DEFAULT_SETTINGS.updateExisting),
 		filenamePattern: readString(persisted.filenamePattern, DEFAULT_SETTINGS.filenamePattern),
-		lastSyncAtMs: readTimestampMs(persisted.lastSyncAtMs, DEFAULT_SETTINGS.lastSyncAtMs)
+		lastSyncAtMs: readTimestampMs(persisted.lastSyncAtMs, DEFAULT_SETTINGS.lastSyncAtMs),
+		enableTranscription: readBoolean(persisted.enableTranscription, DEFAULT_SETTINGS.enableTranscription),
+		transcriptionApiUrl: readString(persisted.transcriptionApiUrl, DEFAULT_SETTINGS.transcriptionApiUrl),
+		transcriptionApiKey: readString(persisted.transcriptionApiKey, DEFAULT_SETTINGS.transcriptionApiKey),
+		transcriptionModel: readString(persisted.transcriptionModel, DEFAULT_SETTINGS.transcriptionModel)
 	};
 }
 

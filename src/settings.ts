@@ -117,6 +117,54 @@ export class PlaudSettingTab extends PluginSettingTab {
 						: DEFAULT_SETTINGS.lastSyncAtMs;
 					await this.plugin.saveSettings();
 				}));
+
+		// --- Transcription settings ---
+		containerEl.createEl('h3', {text: 'Transcription'});
+
+		new Setting(containerEl)
+			.setName('Enable transcription')
+			.setDesc('Use an LLM/ASR API to transcribe audio when transcript is missing.')
+			.addToggle((toggle) => toggle
+				.setValue(this.plugin.settings.enableTranscription)
+				.onChange(async (value) => {
+					this.plugin.settings.enableTranscription = value;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Transcription API URL')
+			.setDesc('OpenAI-compatible base URL for audio transcription.')
+			.addText((text) => text
+				.setPlaceholder(DEFAULT_SETTINGS.transcriptionApiUrl)
+				.setValue(this.plugin.settings.transcriptionApiUrl)
+				.onChange(async (value) => {
+					this.plugin.settings.transcriptionApiUrl = value.trim() || DEFAULT_SETTINGS.transcriptionApiUrl;
+					await this.plugin.saveSettings();
+				}));
+
+		new Setting(containerEl)
+			.setName('Transcription API key')
+			.setDesc('API key for the transcription service.')
+			.addText((text) => {
+				text.inputEl.type = 'password';
+				text.setPlaceholder('sk-...');
+				text.setValue(this.plugin.settings.transcriptionApiKey);
+				text.onChange(async (value) => {
+					this.plugin.settings.transcriptionApiKey = value.trim();
+					await this.plugin.saveSettings();
+				});
+			});
+
+		new Setting(containerEl)
+			.setName('Transcription model')
+			.setDesc('Model name for audio transcription.')
+			.addText((text) => text
+				.setPlaceholder(DEFAULT_SETTINGS.transcriptionModel)
+				.setValue(this.plugin.settings.transcriptionModel)
+				.onChange(async (value) => {
+					this.plugin.settings.transcriptionModel = value.trim() || DEFAULT_SETTINGS.transcriptionModel;
+					await this.plugin.saveSettings();
+				}));
 	}
 
 	private async refreshTokenStatus(statusSetting: Setting): Promise<void> {

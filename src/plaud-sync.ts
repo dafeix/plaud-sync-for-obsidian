@@ -21,6 +21,7 @@ export interface PlaudSyncSummary {
 	updated: number;
 	skipped: number;
 	failed: number;
+	transcribed: number;
 	lastSyncAtMsBefore: number;
 	lastSyncAtMsAfter: number;
 	failures: PlaudSyncFailure[];
@@ -35,6 +36,8 @@ export interface RunPlaudSyncInput {
 	renderMarkdown: (detail: NormalizedPlaudDetail) => string;
 	downloadAudio: (fileId: string) => Promise<ArrayBuffer>;
 	createBinary: (path: string, data: ArrayBuffer) => Promise<void>;
+	enableTranscription: boolean;
+	transcribeAudio: (audioData: ArrayBuffer, fileName: string) => Promise<string>;
 	upsertNote: (input: {
 		vault: PlaudVaultAdapter;
 		syncFolder: string;
@@ -124,6 +127,7 @@ export async function runPlaudSync(input: RunPlaudSyncInput): Promise<PlaudSyncS
 	let updated = 0;
 	let skipped = 0;
 	let failed = 0;
+	let transcribed = 0;
 	let checkpointCandidate = checkpointBefore;
 	const failures: PlaudSyncFailure[] = [];
 
@@ -153,14 +157,28 @@ export async function runPlaudSync(input: RunPlaudSyncInput): Promise<PlaudSyncS
 				skipped += 1;
 			}
 
+			let audioData: ArrayBuffer | null = null;
+
 			try {
-				const audioData = await input.downloadAudio(fileId);
+				audioData = await input.downloadAudio(fileId);
 				const audioFolder = `${input.settings.syncFolder}/audio`;
 				await input.vault.ensureFolder(audioFolder);
 				const audioPath = `${audioFolder}/plaud-audio-${fileId}.ogg`;
 				await input.createBinary(audioPath, audioData);
 			} catch {
 				// best-effort audio download
+			}
+
+			if (audioData && !normalized.transcript && input.enableTranscription) {
+				try {
+					const transcript = await input.transcribeAudio(audioData, `plaud-audio-${fileId}.ogg`);
+					normalized.transcript = transcript;
+					const updatedMarkdown = input.renderMarkdown(normalized);
+					await input.vault.write(upsertResult.path, updatedMarkdown);
+					transcribed += 1;
+				} catch {
+					// best-effort transcription
+				}
 			}
 
 			checkpointCandidate = Math.max(
@@ -190,6 +208,7 @@ export async function runPlaudSync(input: RunPlaudSyncInput): Promise<PlaudSyncS
 		updated,
 		skipped,
 		failed,
+		transcribed,
 		lastSyncAtMsBefore: checkpointBefore,
 		lastSyncAtMsAfter: checkpointAfter,
 		failures
