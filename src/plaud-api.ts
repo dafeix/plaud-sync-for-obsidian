@@ -48,6 +48,7 @@ export type PlaudRequestFn = (request: PlaudRequest) => Promise<PlaudRequestResu
 export interface PlaudApiClient {
 	listFiles(): Promise<PlaudFileSummary[]>;
 	getFileDetail(fileId: string): Promise<PlaudFileDetail>;
+	downloadAudio(fileId: string): Promise<ArrayBuffer>;
 }
 
 export interface CreatePlaudApiClientOptions {

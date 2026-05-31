@@ -33,6 +33,8 @@ export interface RunPlaudSyncInput {
 	saveCheckpoint: (nextLastSyncAtMs: number) => Promise<void>;
 	normalizeDetail: (raw: unknown) => NormalizedPlaudDetail;
 	renderMarkdown: (detail: NormalizedPlaudDetail) => string;
+	downloadAudio: (fileId: string) => Promise<ArrayBuffer>;
+	createBinary: (path: string, data: ArrayBuffer) => Promise<void>;
 	upsertNote: (input: {
 		vault: PlaudVaultAdapter;
 		syncFolder: string;
@@ -149,6 +151,16 @@ export async function runPlaudSync(input: RunPlaudSyncInput): Promise<PlaudSyncS
 				updated += 1;
 			} else {
 				skipped += 1;
+			}
+
+			try {
+				const audioData = await input.downloadAudio(fileId);
+				const audioFolder = `${input.settings.syncFolder}/audio`;
+				await input.vault.ensureFolder(audioFolder);
+				const audioPath = `${audioFolder}/plaud-audio-${fileId}.ogg`;
+				await input.createBinary(audioPath, audioData);
+			} catch {
+				// best-effort audio download
 			}
 
 			checkpointCandidate = Math.max(

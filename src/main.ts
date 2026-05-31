@@ -150,6 +150,21 @@ export default class PlaudSyncPlugin extends Plugin {
 				}
 
 				return detail;
+			},
+			downloadAudio: async (fileId: string) => {
+				const apiDomain = this.settings.apiDomain.replace(/\/+$/, '');
+				const response = await requestUrl({
+					url: `${apiDomain}/file/download/${encodeURIComponent(fileId)}`,
+					method: 'GET',
+					headers: {Authorization: `Bearer ${token}`},
+					throw: false
+				});
+
+				if (response.status >= 400) {
+					throw new Error(`Audio download failed with HTTP ${response.status}.`);
+				}
+
+				return response.arrayBuffer;
 			}
 		};
 
@@ -168,6 +183,8 @@ export default class PlaudSyncPlugin extends Plugin {
 			},
 			normalizeDetail: normalizePlaudDetail,
 			renderMarkdown: renderPlaudMarkdown,
+			downloadAudio: async (fileId) => resilientApi.downloadAudio(fileId),
+			createBinary: async (path, data) => this.createVaultAdapter().createBinary(path, data),
 			upsertNote: upsertPlaudNote
 		});
 	}
@@ -268,6 +285,9 @@ export default class PlaudSyncPlugin extends Plugin {
 			},
 			create: async (path, content) => {
 				await this.app.vault.create(path, content);
+			},
+			createBinary: async (path, data) => {
+				await this.app.vault.createBinary(path, data);
 			}
 		};
 	}

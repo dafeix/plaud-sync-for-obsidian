@@ -58,6 +58,8 @@ export function renderPlaudMarkdown(detail: NormalizedPlaudDetail): string {
 		'',
 		'## Transcript',
 		transcript,
+		'',
+		`![[audio/plaud-audio-${detail.fileId}.ogg]]`,
 		''
 	].join('\n');
 }
